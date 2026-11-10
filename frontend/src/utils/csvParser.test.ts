@@ -66,6 +66,7 @@ John,Doe,john.doe@example.com,Developer,US,Tech Corp`
       companyName: 'Tech Corp',
       isValid: true,
       errors: [],
+      warnings: [],
       rowIndex: 2,
     })
   })
@@ -222,5 +223,64 @@ Jane,Johnson,jane@example.com`
     expect(result[0].lastName).toBe('Doe')
     expect(result[0].email).toBe('john@example.com')
     expect(result[0].isValid).toBe(true)
+  })
+
+  describe('country code validation', () => {
+    it('should drop invalid country codes with a warning but keep the lead valid', () => {
+      const csv = `firstName,lastName,email,countryCode
+John,Doe,john@example.com,XXX
+Jane,Smith,jane@example.com,12`
+
+      const result = parseCsv(csv)
+
+      expect(result[0].countryCode).toBeUndefined()
+      expect(result[0].warnings).toEqual(['Invalid country code "XXX"'])
+      expect(result[0].isValid).toBe(true)
+      expect(result[0].errors).toEqual([])
+      expect(result[1].countryCode).toBeUndefined()
+      expect(result[1].warnings).toEqual(['Invalid country code "12"'])
+      expect(result[1].isValid).toBe(true)
+    })
+
+    it('should treat UK as invalid (ISO code is GB)', () => {
+      const csv = `firstName,lastName,email,countryCode
+John,Doe,john@example.com,UK`
+
+      const result = parseCsv(csv)
+
+      expect(result[0].countryCode).toBeUndefined()
+      expect(result[0].warnings).toEqual(['Invalid country code "UK"'])
+    })
+
+    it('should uppercase valid lowercase country codes without a warning', () => {
+      const csv = `firstName,lastName,email,countryCode
+John,Doe,john@example.com,es`
+
+      const result = parseCsv(csv)
+
+      expect(result[0].countryCode).toBe('ES')
+      expect(result[0].warnings).toEqual([])
+    })
+
+    it('should not warn when country code is empty', () => {
+      const csv = `firstName,lastName,email,countryCode
+John,Doe,john@example.com,`
+
+      const result = parseCsv(csv)
+
+      expect(result[0].countryCode).toBeUndefined()
+      expect(result[0].warnings).toEqual([])
+    })
+
+    it('should keep errors and warnings separate on an invalid lead', () => {
+      const csv = `firstName,lastName,email,countryCode
+John,Doe,,XXX`
+
+      const result = parseCsv(csv)
+
+      expect(result[0].isValid).toBe(false)
+      expect(result[0].errors).toEqual(['Email is required'])
+      expect(result[0].warnings).toEqual(['Invalid country code "XXX"'])
+    })
   })
 })
