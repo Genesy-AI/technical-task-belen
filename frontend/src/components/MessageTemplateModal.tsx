@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { api } from '../api'
+import { filterMessageFields } from '../utils/messageFields'
 
 interface MessageTemplateModalProps {
   isOpen: boolean
@@ -18,6 +19,7 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
   selectedLeadsCount,
 }) => {
   const [template, setTemplate] = useState('')
+  const [fieldSearch, setFieldSearch] = useState('')
   const [generationResult, setGenerationResult] = useState<{
     success: boolean
     generatedCount: number
@@ -74,6 +76,7 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
     if (!generateMessagesMutation.isPending) {
       onClose()
       setTemplate('')
+      setFieldSearch('')
       setGenerationResult(null)
     }
   }, [generateMessagesMutation.isPending, onClose])
@@ -106,7 +109,7 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
     }
   }, [isOpen, handleClose])
 
-  const availableFields = ['firstName', 'lastName', 'email', 'jobTitle', 'companyName', 'countryCode']
+  const filteredFields = filterMessageFields(fieldSearch)
 
   const insertField = (field: string) => {
     if (textareaRef.current) {
@@ -131,7 +134,7 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
@@ -155,34 +158,50 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
               <label htmlFor="message-template" className="block text-sm font-medium text-gray-700 mb-2">
                 Message Template
               </label>
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-sm text-gray-600">Insert field:</span>
-                  {availableFields.map((field) => (
-                    <button
-                      key={field}
-                      type="button"
-                      onClick={() => insertField(field)}
-                      className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
-                    >
-                      {`{${field}}`}
-                    </button>
-                  ))}
-                </div>
+              <div className="flex gap-3">
                 <textarea
                   ref={textareaRef}
                   id="message-template"
                   value={template}
                   onChange={(e) => setTemplate(e.target.value)}
                   placeholder="Enter your message template here. Use {fieldName} to insert dynamic values.&#10;&#10;Example: Hi {firstName}, I noticed you work at {companyName} as a {jobTitle}. Would you be interested in..."
-                  className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  className="flex-1 h-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                   required
                 />
+                <div className="w-56 h-32 flex flex-col border border-gray-300 rounded-md overflow-hidden">
+                  <input
+                    type="search"
+                    value={fieldSearch}
+                    onChange={(e) => setFieldSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Enter would otherwise submit the form
+                      if (e.key === 'Enter') e.preventDefault()
+                    }}
+                    placeholder="Search fields..."
+                    aria-label="Search fields"
+                    className="px-2 py-1 text-sm border-b border-gray-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+                  />
+                  <div className="flex-1 overflow-y-auto">
+                    {filteredFields.map((field) => (
+                      <button
+                        key={field}
+                        type="button"
+                        onClick={() => insertField(field)}
+                        className="block w-full text-left px-2 py-1 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800 transition-colors"
+                      >
+                        {field}
+                      </button>
+                    ))}
+                    {filteredFields.length === 0 && (
+                      <div className="px-2 py-1 text-sm text-gray-400">No fields match</div>
+                    )}
+                  </div>
+                </div>
               </div>
               <p className="mt-2 text-sm text-gray-500">
-                Use curly braces around field names (e.g., {`{firstName}`}) to insert dynamic values. If a
-                field is missing for a lead, an error will be shown and no message will be generated for that
-                lead.
+                Click a field on the right to insert it, or type field names in curly braces (e.g.,{' '}
+                {`{firstName}`}). If a field is missing for a lead, an error will be shown and no message will
+                be generated for that lead.
               </p>
             </div>
 
