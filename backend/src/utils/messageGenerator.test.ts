@@ -9,6 +9,9 @@ describe('generateMessageFromTemplate', () => {
     jobTitle: 'Software Engineer',
     companyName: 'Tech Corp',
     countryCode: 'US',
+    phoneNumber: '+1-555-123-4567',
+    yearsInRole: 5,
+    linkedinUrl: 'https://linkedin.com/in/johndoe',
   }
 
   const partialLead: Lead = {
@@ -45,10 +48,12 @@ describe('generateMessageFromTemplate', () => {
 
     it('should handle template with all available fields', () => {
       const template =
-        'Name: {firstName} {lastName}, Email: {email}, Job: {jobTitle} at {companyName}, Country: {countryCode}'
+        'Name: {firstName} {lastName}, Email: {email}, Job: {jobTitle} at {companyName}, Country: {countryCode}, ' +
+        'Phone: {phoneNumber}, Years: {yearsInRole}, LinkedIn: {linkedinUrl}'
       const result = generateMessageFromTemplate(template, fullLead)
       expect(result).toBe(
-        'Name: John Doe, Email: john.doe@example.com, Job: Software Engineer at Tech Corp, Country: US'
+        'Name: John Doe, Email: john.doe@example.com, Job: Software Engineer at Tech Corp, Country: US, ' +
+          'Phone: +1-555-123-4567, Years: 5, LinkedIn: https://linkedin.com/in/johndoe'
       )
     })
 
@@ -75,6 +80,19 @@ describe('generateMessageFromTemplate', () => {
   })
 
   describe('error handling for missing fields', () => {
+    it('should treat yearsInRole 0 as a valid value', () => {
+      const template = '{yearsInRole} years in role'
+      const result = generateMessageFromTemplate(template, { firstName: 'Bob', yearsInRole: 0 })
+      expect(result).toBe('0 years in role')
+    })
+
+    it('should throw error when phoneNumber is missing', () => {
+      const template = 'Call {phoneNumber}'
+      expect(() => generateMessageFromTemplate(template, minimalLead)).toThrow(
+        'Missing required field: phoneNumber'
+      )
+    })
+
     it('should throw error when field is null', () => {
       const template = 'Hello {firstName} {lastName}!'
       expect(() => generateMessageFromTemplate(template, partialLead)).toThrow(

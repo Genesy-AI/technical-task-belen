@@ -1,5 +1,6 @@
 import Papa from 'papaparse'
 import { normalizeCountryCode } from './countryCodes'
+import { normalizeLinkedinUrl, normalizePhoneNumber, normalizeYearsInRole } from './leadFields'
 
 export interface CsvLead {
   firstName: string
@@ -8,6 +9,9 @@ export interface CsvLead {
   jobTitle?: string
   countryCode?: string
   companyName?: string
+  phoneNumber?: string
+  yearsInRole?: number
+  linkedinUrl?: string
   isValid: boolean
   errors: string[]
   warnings: string[]
@@ -81,6 +85,30 @@ export const parseCsv = (content: string): CsvLead[] => {
         case 'companyname':
           lead.companyName = trimmedValue || undefined
           break
+        case 'phonenumber': {
+          const phoneNumber = normalizePhoneNumber(trimmedValue)
+          if (trimmedValue && !phoneNumber) {
+            warnings.push(`Invalid phone number "${trimmedValue}"`)
+          }
+          lead.phoneNumber = phoneNumber || undefined
+          break
+        }
+        case 'yearsinrole': {
+          const yearsInRole = normalizeYearsInRole(trimmedValue)
+          if (trimmedValue && yearsInRole === null) {
+            warnings.push(`Invalid years in role "${trimmedValue}"`)
+          }
+          lead.yearsInRole = yearsInRole ?? undefined
+          break
+        }
+        case 'linkedinurl': {
+          const linkedinUrl = normalizeLinkedinUrl(trimmedValue)
+          if (trimmedValue && !linkedinUrl) {
+            warnings.push(`Invalid LinkedIn URL "${trimmedValue}"`)
+          }
+          lead.linkedinUrl = linkedinUrl || undefined
+          break
+        }
       }
     })
 

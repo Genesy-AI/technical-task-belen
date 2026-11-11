@@ -283,4 +283,44 @@ John,Doe,,XXX`
       expect(result[0].warnings).toEqual(['Invalid country code "XXX"'])
     })
   })
+
+  describe('new lead fields', () => {
+    it('should parse phone number, years in role and LinkedIn URL', () => {
+      const csv = `firstName,lastName,email,phoneNumber,yearsInRole,linkedinUrl
+John,Doe,john@example.com,+1-280-754-0462x2154,2,linkedin.com/in/johndoe`
+
+      const result = parseCsv(csv)
+
+      expect(result[0].phoneNumber).toBe('+1-280-754-0462x2154')
+      expect(result[0].yearsInRole).toBe(2)
+      expect(result[0].linkedinUrl).toBe('https://linkedin.com/in/johndoe')
+      expect(result[0].warnings).toEqual([])
+    })
+
+    it('should drop invalid values with a warning but keep the lead valid', () => {
+      const csv = `firstName,lastName,email,phoneNumber,yearsInRole,linkedinUrl
+John,Doe,john@example.com,call me,abc,https://example.com/johndoe`
+
+      const result = parseCsv(csv)
+
+      expect(result[0].phoneNumber).toBeUndefined()
+      expect(result[0].yearsInRole).toBeUndefined()
+      expect(result[0].linkedinUrl).toBeUndefined()
+      expect(result[0].warnings).toEqual([
+        'Invalid phone number "call me"',
+        'Invalid years in role "abc"',
+        'Invalid LinkedIn URL "https://example.com/johndoe"',
+      ])
+      expect(result[0].isValid).toBe(true)
+    })
+
+    it('should not warn when the new fields are empty', () => {
+      const csv = `firstName,lastName,email,phoneNumber,yearsInRole,linkedinUrl
+John,Doe,john@example.com,,,`
+
+      const result = parseCsv(csv)
+
+      expect(result[0].warnings).toEqual([])
+    })
+  })
 })
